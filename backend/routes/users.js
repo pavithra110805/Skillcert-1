@@ -47,4 +47,36 @@ router.post("/register", async (req, res) => {
     }
 });
 
+// GET /api/profile/:wallet
+router.get("/profile/:wallet", async (req, res) => {
+    try {
+        const { wallet } = req.params;
+
+        // Check if user exists
+        const userResult = await pool.query(
+            "SELECT * FROM users WHERE wallet_address = $1",
+            [wallet]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Fetch certificates linked to wallet
+        const certsResult = await pool.query(
+            "SELECT * FROM certificates WHERE wallet_address = $1 ORDER BY created_at DESC",
+            [wallet]
+        );
+
+        res.json({
+            user: userResult.rows[0],
+            certificates: certsResult.rows,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to fetch profile" });
+    }
+});
+
 module.exports = router;
